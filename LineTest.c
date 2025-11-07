@@ -52,11 +52,23 @@ int main(int argc, char *argv[]) {
       if(sc == SDL_SCANCODE_DOWN){
         Freq -= 2;
       }
+      if(sc == SDL_SCANCODE_LEFT){
+        Amp += 0.5f;
+      }
+      if(sc == SDL_SCANCODE_RIGHT){
+        Amp -= 0.5f;
+      }
+      if(sc == SDL_SCANCODE_1){
+        waveType = 1;
+      }
+      if(sc == SDL_SCANCODE_2){
+        waveType = 2;
+      }
     }
     const int minimum_audio = (8000 * sizeof (float)) / 2;
     static float SineSamples[512];
     static float SawSamples[512];
-    if (SDL_GetAudioStreamQueued(stream) < minimum_audio){
+    if (SDL_GetAudioStreamQueued(stream) < minimum_audio && waveType == 1){
       for (int i=0;i<=512;i++) {
         x = i*1;
         float phase = current_sine_sample*(Freq/8000.0f);
@@ -70,14 +82,12 @@ int main(int argc, char *argv[]) {
       }
 
       current_sine_sample %= 8000;
-
-      //SDL_PutAudioStreamData(stream, SineSamples, sizeof (SineSamples));
     }
     
-    if(SDL_GetAudioStreamQueued(stream) < minimum_audio){
+    if (SDL_GetAudioStreamQueued(stream) < minimum_audio && waveType == 2){
       for (int i=0;i<=512;i++){
         x = i*1;
-        float phase = current_saw_sample*Freq/8000.0f;
+        float phase = current_saw_sample*(Freq/8000.0f);
         y = Amp*(phase*2-floor(phase*2));
         SawSamples[i] = y;
         current_saw_sample++;
@@ -87,10 +97,15 @@ int main(int argc, char *argv[]) {
         Sawvalues[i] = xy;
       }
       current_saw_sample %= 8000;
+ 
+    }
 
+
+    if (SDL_GetAudioStreamQueued(stream) < minimum_audio && waveType == 1){
+      SDL_PutAudioStreamData(stream, SineSamples, sizeof (SineSamples));
+    }else if (SDL_GetAudioStreamQueued(stream) < minimum_audio && waveType == 2){
       SDL_PutAudioStreamData(stream, SawSamples, sizeof (SawSamples));
     }
-    
 
     SDL_SetRenderScale(renderer, 1.0f,1.0f);
     SDL_SetRenderDrawColor(renderer,0,0,0,1);
@@ -100,9 +115,9 @@ int main(int argc, char *argv[]) {
     SDL_RenderLines(renderer, Sinevalues,  SDL_arraysize(Sinevalues));
     SDL_RenderLines(renderer, Sawvalues,  SDL_arraysize(Sawvalues));
 
-    SDL_SetRenderDrawColor(renderer,255,255,255,1);
-    SDL_RenderDebugTextFormat(renderer, 50, 140, "Freq: %f", Freq);
-    SDL_RenderDebugTextFormat(renderer, 50, 160, "Amp: %f", Amp);
+    SDL_SetRenderDrawColor(renderer,255,255,255,255);
+    SDL_RenderDebugTextFormat(renderer, 10, 200, "Freq: %f", Freq);
+      SDL_RenderDebugTextFormat(renderer, 10, 240, "Amp: %f", Amp);
 
     SDL_RenderPresent(renderer);
   }
