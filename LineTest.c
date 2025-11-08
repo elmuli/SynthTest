@@ -20,9 +20,11 @@ int main(int argc, char *argv[]) {
   spec.channels = 1;
   spec.format = SDL_AUDIO_F32;
   spec.freq = 8000;
-  SDL_AudioStream *stream = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &spec, NULL, NULL);
+  SDL_AudioStream *SineStream = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &spec, NULL, NULL);
+  SDL_AudioStream *SawStream = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &spec, NULL, NULL);
 
-  SDL_ResumeAudioStreamDevice(stream);
+  SDL_ResumeAudioStreamDevice(SineStream);
+  SDL_ResumeAudioStreamDevice(SawStream);
 
   
 
@@ -73,7 +75,7 @@ int main(int argc, char *argv[]) {
     const int minimum_audio = (8000 * sizeof (float)) / 2;
     static float SineSamples[512];
     static float SawSamples[512];
-    if (SDL_GetAudioStreamQueued(stream) < minimum_audio && SineWave){
+    if (SDL_GetAudioStreamQueued(SineStream) < minimum_audio){
       for (int i=0;i<=512;i++) {
         x = i*1;
         float phase = current_sine_sample*(Freq/8000.0f);
@@ -89,7 +91,7 @@ int main(int argc, char *argv[]) {
       current_sine_sample %= 8000;
     }
     
-    if (SDL_GetAudioStreamQueued(stream) < minimum_audio && SawWave){
+    if (SDL_GetAudioStreamQueued(SawStream) < minimum_audio){
       for (int i=0;i<=512;i++){
         x = i*1;
         float phase = current_saw_sample*(Freq/8000.0f);
@@ -106,12 +108,14 @@ int main(int argc, char *argv[]) {
     }
 
 
-    if (SDL_GetAudioStreamQueued(stream) < minimum_audio){
+    if (SDL_GetAudioStreamQueued(SineStream) < minimum_audio){
       if (SineWave){
-      SDL_PutAudioStreamData(stream, SineSamples, sizeof (SineSamples));
+      SDL_PutAudioStreamData(SineStream, SineSamples, sizeof (SineSamples));
       }
+    }
+    if(SDL_GetAudioStreamQueued(SawStream) < minimum_audio){
       if(SawWave){
-      SDL_PutAudioStreamData(stream, SawSamples, sizeof (SawSamples));
+      SDL_PutAudioStreamData(SawStream, SawSamples, sizeof (SawSamples));
       }
     }
 
@@ -130,6 +134,9 @@ int main(int argc, char *argv[]) {
 
     SDL_RenderPresent(renderer);
   }
+
+  SDL_DestroyAudioStream(SineStream);
+  SDL_DestroyAudioStream(SawStream);
 
   SDL_DestroyRenderer(renderer);
   SDL_DestroyWindow(window);
