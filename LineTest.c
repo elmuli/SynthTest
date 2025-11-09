@@ -13,6 +13,7 @@ struct waveShittings{
     float Freq;
     float TAmp;
     float Amp;
+    float PhaseShift;
 
     float Attack;
     float Decay;
@@ -58,6 +59,7 @@ int main(int argc, char *argv[]) {
   WaveShittings[0].Sustain = 0.5f;
   WaveShittings[0].Release = 0.1f;
   WaveShittings[0].WasMax = 0;
+  WaveShittings[0].PhaseShift = 0;
 
   WaveShittings[1].Freq = 200;
   WaveShittings[1].TAmp = 0;
@@ -67,6 +69,7 @@ int main(int argc, char *argv[]) {
   WaveShittings[1].Sustain = 0.5f;
   WaveShittings[1].Release = 0.1f;
   WaveShittings[1].WasMax = 0;
+  WaveShittings[1].PhaseShift = 0;
 
   float ScaleMultiplyer = 0.01f;
 
@@ -127,6 +130,12 @@ int main(int argc, char *argv[]) {
           case SDL_SCANCODE_F:
             WaveShittings[CurrentWave].Release -= 0.1f;
             continue;
+          case SDL_SCANCODE_Z:
+            WaveShittings[CurrentWave].PhaseShift += 0.1f;
+            continue;
+          case SDL_SCANCODE_X:
+            WaveShittings[CurrentWave].PhaseShift -= 0.1f;
+            continue;
         }
       }
       if(windowEvent.type == SDL_EVENT_KEY_UP){
@@ -145,7 +154,7 @@ int main(int argc, char *argv[]) {
     if (SDL_GetAudioStreamQueued(SineStream) < minimum_audio){
       for (int i=0;i<=512;i++) {
         x = i*1;
-        float phase = current_sine_sample*(WaveShittings[0].Freq/8000.0f);
+        float phase = WaveShittings[1].PhaseShift+current_sine_sample*(WaveShittings[0].Freq/8000.0f);
         if (keyDown){
           if(WaveShittings[0].TAmp < abs(WaveShittings[0].Amp) && !WaveShittings[0].WasMax){
             WaveShittings[0].TAmp += WaveShittings[0].Attack*ScaleMultiplyer;
@@ -176,7 +185,7 @@ int main(int argc, char *argv[]) {
     if (SDL_GetAudioStreamQueued(SawStream) < minimum_audio){
       for (int i=0;i<=512;i++){
         x = i*1;
-        float phase = current_saw_sample*(WaveShittings[1].Freq/8000.0f);
+        float phase = WaveShittings[1].PhaseShift+current_saw_sample*(WaveShittings[1].Freq/8000.0f);
         if (keyDown){
           if(WaveShittings[1].TAmp < abs(WaveShittings[1].Amp) && !WaveShittings[1].WasMax){
             WaveShittings[1].TAmp += WaveShittings[1].Attack*ScaleMultiplyer;
@@ -223,7 +232,7 @@ int main(int argc, char *argv[]) {
     SDL_RenderLines(renderer, Sawvalues,  SDL_arraysize(Sawvalues));
 
     SDL_SetRenderDrawColor(renderer,255,255,255,255);
-    SDL_RenderDebugTextFormat(renderer, 10, 180, "Current Wave (1/2): %i", CurrentWave);
+    SDL_RenderDebugTextFormat(renderer, 10, 180, "Current Wave (1/2): %i", CurrentWave+1);
     SDL_RenderDebugTextFormat(renderer, 10, 200, "Freq (^): %f", WaveShittings[CurrentWave].Freq);
     SDL_RenderDebugTextFormat(renderer, 300, 200, "Amp (<>): %f", WaveShittings[CurrentWave].Amp);
     SDL_RenderDebugTextFormat(renderer, 10, 240, "keyDown (Spa): %i", keyDown);
@@ -232,6 +241,7 @@ int main(int argc, char *argv[]) {
     SDL_RenderDebugTextFormat(renderer, 300, 280, "Decay (W/S): %f", WaveShittings[CurrentWave].Decay);
     SDL_RenderDebugTextFormat(renderer, 10, 320, "Sustain (E/D): %f", WaveShittings[CurrentWave].Sustain);
     SDL_RenderDebugTextFormat(renderer, 300, 320, "Release (R/F): %f", WaveShittings[CurrentWave].Release);
+    SDL_RenderDebugTextFormat(renderer, 10, 360, "Phase Shift (Z/FX): %f", WaveShittings[CurrentWave].PhaseShift);
 
     SDL_RenderPresent(renderer);
   }
