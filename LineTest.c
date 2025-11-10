@@ -5,8 +5,8 @@
 #include <stdlib.h>
 #include <math.h>
  
-int widht = 512;
-int hight = 400;
+int widht = 1280;
+int hight = 960;
 SDL_Event windowEvent;
 
 struct waveShittings{
@@ -72,7 +72,7 @@ int main(int argc, char *argv[]) {
   WaveShittings[1].PhaseShift = 0;
 
   float ScaleMultiplyer = 0.01f;
-
+  
   int keyDown = 0;
 
   while (true) {
@@ -154,7 +154,7 @@ int main(int argc, char *argv[]) {
     if (SDL_GetAudioStreamQueued(SineStream) < minimum_audio){
       for (int i=0;i<=512;i++) {
         x = i*1;
-        float phase = WaveShittings[1].PhaseShift+current_sine_sample*(WaveShittings[0].Freq/8000.0f);
+        float phase = WaveShittings[0].PhaseShift+current_sine_sample*(WaveShittings[0].Freq/8000.0f);
         if (keyDown){
           if(WaveShittings[0].TAmp < abs(WaveShittings[0].Amp) && !WaveShittings[0].WasMax){
             WaveShittings[0].TAmp += WaveShittings[0].Attack*ScaleMultiplyer;
@@ -175,14 +175,12 @@ int main(int argc, char *argv[]) {
         SineSamples[i] = y;
         current_sine_sample++;
         SDL_FPoint xy;
-        xy.y = y+50;
-        xy.x = x;
+        xy.y = y+100;
+        xy.x = x+192;
         Sinevalues[i] = xy;
       }
       current_sine_sample %= 8000;
-    }
     
-    if (SDL_GetAudioStreamQueued(SawStream) < minimum_audio){
       for (int i=0;i<=512;i++){
         x = i*1;
         float phase = WaveShittings[1].PhaseShift+current_saw_sample*(WaveShittings[1].Freq/8000.0f);
@@ -203,45 +201,50 @@ int main(int argc, char *argv[]) {
           }
         }
         y = WaveShittings[1].TAmp*(phase*1-floor(phase*1));
-        SawSamples[i] = y;
+        SineSamples[i] += y;
         current_saw_sample++;
+        Sinevalues[i].y += y;
+        /*
         SDL_FPoint xy;
         xy.y = y+150;
         xy.x = x;
         Sawvalues[i] = xy;
+        */
       }
       current_saw_sample %= 8000;
- 
     }
 
 
     if (SDL_GetAudioStreamQueued(SineStream) < minimum_audio){
       SDL_PutAudioStreamData(SineStream, SineSamples, sizeof (SineSamples));
     }
+    /*
     if(SDL_GetAudioStreamQueued(SawStream) < minimum_audio){
       SDL_PutAudioStreamData(SawStream, SawSamples, sizeof (SawSamples));
-    }
+    }*/
 
     SDL_SetRenderScale(renderer, 1.0f,1.0f);
     SDL_SetRenderDrawColor(renderer,0,0,0,1);
     SDL_RenderClear(renderer);
 
-    SDL_SetRenderDrawColor(renderer,255,255,255,1);
+    SDL_SetRenderDrawColor(renderer,255,0,0,1);
+    SDL_SetRenderScale(renderer, 1.5f,1.5f);
     SDL_RenderLines(renderer, Sinevalues,  SDL_arraysize(Sinevalues));
     SDL_SetRenderDrawColor(renderer,255,0,0,1);
-    SDL_RenderLines(renderer, Sawvalues,  SDL_arraysize(Sawvalues));
+    //SDL_RenderLines(renderer, Sawvalues,  SDL_arraysize(Sawvalues));
 
     SDL_SetRenderDrawColor(renderer,255,255,255,255);
-    SDL_RenderDebugTextFormat(renderer, 10, 180, "Current Wave (1/2): %i", CurrentWave+1);
-    SDL_RenderDebugTextFormat(renderer, 10, 200, "Freq (^): %f", WaveShittings[CurrentWave].Freq);
-    SDL_RenderDebugTextFormat(renderer, 300, 200, "Amp (<>): %f", WaveShittings[CurrentWave].Amp);
-    SDL_RenderDebugTextFormat(renderer, 10, 240, "keyDown (Spa): %i", keyDown);
-    SDL_RenderDebugTextFormat(renderer, 300, 240, "TAmp: %f", WaveShittings[CurrentWave].TAmp);
-    SDL_RenderDebugTextFormat(renderer, 10, 280, "Attack (Q/A): %f", WaveShittings[CurrentWave].Attack);
-    SDL_RenderDebugTextFormat(renderer, 300, 280, "Decay (W/S): %f", WaveShittings[CurrentWave].Decay);
-    SDL_RenderDebugTextFormat(renderer, 10, 320, "Sustain (E/D): %f", WaveShittings[CurrentWave].Sustain);
-    SDL_RenderDebugTextFormat(renderer, 300, 320, "Release (R/F): %f", WaveShittings[CurrentWave].Release);
-    SDL_RenderDebugTextFormat(renderer, 10, 360, "Phase Shift (Z/FX): %f", WaveShittings[CurrentWave].PhaseShift);
+    SDL_SetRenderScale(renderer, 2.0f,2.0f);
+    SDL_RenderDebugTextFormat(renderer, 10, 200, "Current Wave (1/2): %i", CurrentWave+1);
+    SDL_RenderDebugTextFormat(renderer, 10, 220, "Freq (^): %f", WaveShittings[CurrentWave].Freq);
+    SDL_RenderDebugTextFormat(renderer, 300, 240, "Amp (<>): %f", WaveShittings[CurrentWave].Amp);
+    SDL_RenderDebugTextFormat(renderer, 10, 280, "keyDown (Spa): %i", keyDown);
+    SDL_RenderDebugTextFormat(renderer, 300, 280, "TAmp: %f", WaveShittings[CurrentWave].TAmp);
+    SDL_RenderDebugTextFormat(renderer, 10, 320, "Attack (Q/A): %f", WaveShittings[CurrentWave].Attack);
+    SDL_RenderDebugTextFormat(renderer, 300, 320, "Decay (W/S): %f", WaveShittings[CurrentWave].Decay);
+    SDL_RenderDebugTextFormat(renderer, 10, 360, "Sustain (E/D): %f", WaveShittings[CurrentWave].Sustain);
+    SDL_RenderDebugTextFormat(renderer, 300, 360, "Release (R/F): %f", WaveShittings[CurrentWave].Release);
+    SDL_RenderDebugTextFormat(renderer, 10, 420, "Phase Shift (Z/X): %f", WaveShittings[CurrentWave].PhaseShift);
 
     SDL_RenderPresent(renderer);
   }
