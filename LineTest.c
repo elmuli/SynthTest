@@ -1,5 +1,7 @@
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
+#include <portmidi.h>
+
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -23,6 +25,26 @@ struct waveShittings{
     int WasMax;
 };
 
+float x = 0;
+float y = 0;
+SDL_FPoint Sinevalues[512];
+SDL_FPoint Sawvalues[512];
+
+int CurrentWave = 0;
+
+int current_sine_sample = 0;
+int current_saw_sample = 0;
+
+int current_note = 0;
+
+struct waveShittings WaveShittings[2];
+
+
+float ScaleMultiplyer = 0.01f;
+  
+int keyDown = 0;
+
+
 int main(int argc, char *argv[]) {
   SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO);
 
@@ -39,19 +61,20 @@ int main(int argc, char *argv[]) {
   SDL_ResumeAudioStreamDevice(SineStream);
   SDL_ResumeAudioStreamDevice(SawStream);
 
-  float x = 0;
-  float y = 0;
-  SDL_FPoint Sinevalues[512];
-  SDL_FPoint Sawvalues[512];
-
-  int CurrentWave = 0;
-
-  int current_sine_sample = 0;
-  int current_saw_sample = 0;
-
-  int current_note = 0;
-
-  struct waveShittings WaveShittings[2];
+  Pm_Initialize();
+  int numDevices = Pm_CountDevices();
+  int inputDevicID = -1;
+  for (int i=0;i<numDevices;++i){
+    const PmDeviceInfo *info = Pm_GetDeviceInfo(i);
+    if(info && info->input){
+      SDL_Log("MIDI input %d: %s",i,info->name);
+      inputDevicID = i;
+      break;
+    }
+  }
+  
+  PmStream *midiStream = NULL;
+  Pm_OpenInput(&midiStream, inputDevicID, NULL, 512, NULL, NULL);
 
   WaveShittings[0].Freq = 0;
   WaveShittings[0].TAmp = 0;
@@ -73,9 +96,6 @@ int main(int argc, char *argv[]) {
   WaveShittings[1].WasMax = 0;
   WaveShittings[1].PhaseShift = 0;
 
-  float ScaleMultiplyer = 0.01f;
-  
-  int keyDown = 0;
 
   while (true) {
     if (SDL_PollEvent(&windowEvent)) {
@@ -215,6 +235,19 @@ int main(int argc, char *argv[]) {
 
     }
 
+    if (Pm_Poll(midiStream) == 1){
+      PmEvent buffer[16];
+      int count = Pm_Read(midiStream, buffer, SDL_arraysize(buffer));
+      for (int i=0; i<count; ++i){
+        PmEvent *e = &buffer[i];
+        PmMessage msg = e->message;
+        int status = Pm_MessageStatus(msg);
+        int data1 = Pm_MessageData1(msg);
+        int data2 = Pm_MessageData2(msg);
+        SDL_Log("MIDI message: s=0x%02x d1=%i d2=%i time=%i", status, data1, data2, e->timestamp);
+      }
+    }
+
     const int minimum_audio = (8000 * sizeof (float)) / 2;
     static float SineSamples[512];
     static float SawSamples[512];
@@ -310,7 +343,11 @@ int main(int argc, char *argv[]) {
     SDL_RenderDebugTextFormat(renderer, 300, 360, "Release (R/F): %f", WaveShittings[CurrentWave].Release);
     
     SDL_RenderPresent(renderer);
+    SDL_Delay(1);
   }
+
+  Pm_Close(midiStream);
+  Pm_Terminate();
 
   SDL_DestroyAudioStream(SineStream);
   SDL_DestroyAudioStream(SawStream);

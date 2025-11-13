@@ -1,5 +1,5 @@
 C = gcc
-CFLAGS = -g -Wall -MMD
+CFLAGS = -g -W -MMD
 LDLIBS = -lSDL3 -lm
 
 TARGET = LineTest
