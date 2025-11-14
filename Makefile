@@ -1,6 +1,6 @@
 C = gcc
 CFLAGS = -g -W -MMD
-LDLIBS = -lSDL3 -lm
+LDLIBS = -lSDL3 -lm -lportmidi
 
 TARGET = LineTest
 SRCS = LineTest.c
