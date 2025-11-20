@@ -63,13 +63,13 @@ int main(int argc, char *argv[]) {
 
   Pm_Initialize();
   int numDevices = Pm_CountDevices();
+  printf("%i\n",numDevices);
   int inputDevicID = -1;
   for (int i=0;i<numDevices;++i){
     const PmDeviceInfo *info = Pm_GetDeviceInfo(i);
     if(info && info->input){
       SDL_Log("MIDI input %d: %s",i,info->name);
       inputDevicID = i;
-      break;
     }
   }
   
@@ -244,6 +244,14 @@ int main(int argc, char *argv[]) {
         int status = Pm_MessageStatus(msg);
         int data1 = Pm_MessageData1(msg);
         int data2 = Pm_MessageData2(msg);
+        if(status == 0x90){
+          current_note = data1;
+          keyDown = 1;
+        }else if(status == 0x80){
+          keyDown = 0;
+          WaveShittings[0].WasMax = 0;
+          WaveShittings[1].WasMax = 0;
+        }
         SDL_Log("MIDI message: s=0x%02x d1=%i d2=%i time=%i", status, data1, data2, e->timestamp);
       }
     }
@@ -254,7 +262,7 @@ int main(int argc, char *argv[]) {
     if (SDL_GetAudioStreamQueued(SineStream) < minimum_audio){
       for (int i=0;i<=512;i++) {
         x = i*1;
-        float freq = 440*powf(2.0f,current_note/12.0f)+WaveShittings[0].Freq;
+        float freq = 440*powf(2.0f,(current_note-69)/12.0f)+WaveShittings[0].Freq;
         float phase = WaveShittings[0].PhaseShift+current_sine_sample*(freq/8000.0f);
         if (keyDown){
           if(WaveShittings[0].TAmp < abs(WaveShittings[0].Amp) && !WaveShittings[0].WasMax){
@@ -284,7 +292,7 @@ int main(int argc, char *argv[]) {
     
       for (int i=0;i<=512;i++){
         x = i*1;
-        float freq = 440*powf(2.0f,current_note/12.0f)+WaveShittings[1].Freq;
+        float freq = 440*powf(2.0f,(current_note-69)/12.0f)+WaveShittings[1].Freq;
         float phase = WaveShittings[1].PhaseShift+current_saw_sample*(freq/8000.0f);
         if (keyDown){
           if(WaveShittings[1].TAmp < abs(WaveShittings[1].Amp) && !WaveShittings[1].WasMax){
