@@ -52,7 +52,7 @@ int main(int argc, char *argv[]) {
   SDL_Renderer *renderer = SDL_CreateRenderer(window, NULL);
 
   SDL_AudioSpec spec;
-  spec.channels = 1;
+  spec.channels = 2;
   spec.format = SDL_AUDIO_F32;
   spec.freq = 8000;
   SDL_AudioStream *SineStream = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &spec, NULL, NULL);
@@ -255,7 +255,6 @@ int main(int argc, char *argv[]) {
         }else if(status == 0x80){
           for(int r=0;r<4;r++){
             if(KeyNotes[r] == data1){
-              KeyNotes[r] = 200;
               keyDown = 0;
               WaveShittings[0].WasMax = 0;
               WaveShittings[1].WasMax = 0;
@@ -267,13 +266,16 @@ int main(int argc, char *argv[]) {
       }
     }
 
+
+
     const int minimum_audio = (8000 * sizeof (float)) / 2;
     static float SineSamples[512];
-    static float SawSamples[512];
+    static float SawSamples[256];
     if (SDL_GetAudioStreamQueued(SineStream) < minimum_audio){
       for (int k=0;k<4;k++){
           current_note = KeyNotes[k];
-          //printf("%i\n",current_note);
+        if(current_note != 200){
+          printf("%i\n",current_note);
           for (int i=0;i<=512;i++) {
             x = i*1;
             float freq = 440*powf(2.0f,(current_note-69)/12.0f)+WaveShittings[0].Freq;
@@ -289,19 +291,15 @@ int main(int argc, char *argv[]) {
             }else{
               if(WaveShittings[0].TAmp > 0){
                 WaveShittings[0].TAmp -= WaveShittings[0].Release*ScaleMultiplyer;
-              }else if (WaveShittings[0].TAmp <= 0) {
-                WaveShittings[0].TAmp = 0;
+              }else if (WaveShittings[0].TAmp <= 0.0f) {
+                KeyNotes[k] = 200;
+                WaveShittings[0].TAmp = 0.0f;
                 WaveShittings[0].WasMax = 0;
               }
             }
-            if (KeyNotes[k] != 200){
-              y = WaveShittings[0].TAmp*sin(1*phase*3.141592635f);
-              SineSamples[i] += y;
-              current_sine_sample++;
-            }else{
-              y = 0;
-              SineSamples[i] += 0;
-            }
+            y = WaveShittings[0].TAmp*sin(1*phase*3.141592635f);
+            SineSamples[i] = y;
+            current_sine_sample++;
             SDL_FPoint xy;
             xy.y = y+100;
             xy.x = x+192;
@@ -325,26 +323,22 @@ int main(int argc, char *argv[]) {
           if(WaveShittings[1].TAmp > 0){
             WaveShittings[1].TAmp -= WaveShittings[1].Release*ScaleMultiplyer;
           }else if (WaveShittings[1].TAmp <= 0) {
+            KeyNotes[k] = 200;
             WaveShittings[1].TAmp = 0;
             WaveShittings[1].WasMax = 0;
           }
         }
         //printf("S %f\n", sawY);
-        if (KeyNotes[k] != 200){
-          sawY = WaveShittings[1].TAmp*(phase*1-floor(phase*1));
-          SineSamples[i] += sawY;
-          current_saw_sample++;
-        }else{
-          SineSamples[i] += 0;
-          sawY = 0;
-        }
+        sawY = WaveShittings[1].TAmp*(phase*1-floor(phase*1));
+        SineSamples[i] += sawY;
+        current_saw_sample++;
         Sinevalues[i].y += sawY;
       }
       
       current_saw_sample %= 8000;
       }
+      }
     }
-
 
     if (SDL_GetAudioStreamQueued(SineStream) < minimum_audio){
       SDL_PutAudioStreamData(SineStream, SineSamples, sizeof(SineSamples));
